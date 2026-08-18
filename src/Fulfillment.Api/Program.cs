@@ -19,6 +19,9 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 
+builder.Services.AddScoped<Fulfillment.Application.Products.IProductRepository, ProductRepository>();
+builder.Services.AddScoped<Fulfillment.Application.Products.IProductService, Fulfillment.Application.Products.ProductService>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
