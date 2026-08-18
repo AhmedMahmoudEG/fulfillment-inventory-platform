@@ -1,0 +1,39 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# Test results
+TestResults/
+*.trx
+
+# Rider / IDEs
+.idea/
+.vscode/
+
+# User-specific files
+*.rsuser
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Agents & Governance
+.agents/
+
+# Project Documentation
+docs/
