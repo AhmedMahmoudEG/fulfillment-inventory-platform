@@ -41,7 +41,7 @@ The solution adheres strictly to **Clean Architecture** principles, maintaining 
 - **`Fulfillment.Domain`**: Core enterprise domain entities (`Category`, `Product`, `Warehouse`, `Inventory`, `InventoryAdjustment`). Contains zero framework or database dependencies.
 - **`Fulfillment.Application`**: Service contracts (`IInventoryService`, `IProductService`, etc.), DTO records, domain exceptions (`ValidationException`, `NotFoundException`, `ConflictException`, `ForbiddenException`). References only `Fulfillment.Domain`.
 - **`Fulfillment.Infrastructure`**: Persistence implementation via Entity Framework Core 10, SQL Server `ApplicationDbContext`, Identity stores (`ApplicationUser`), repository implementations, and `JwtTokenGenerator`. Implements `Fulfillment.Application` abstractions.
-- **`Fulfillment.Api`**: Presentation layer featuring ASP.NET Core Web API controllers, RFC 9457 `GlobalExceptionHandler`, policy-based authorization, and built-in OpenAPI specification mapping.
+- **`Fulfillment.Api`**: Presentation layer featuring ASP.NET Core Web API controllers, RFC 9457 `GlobalExceptionHandler`, policy-based authorization, and interactive Swagger UI documentation.
 
 ---
 
@@ -52,7 +52,7 @@ The solution adheres strictly to **Clean Architecture** principles, maintaining 
 - **ORM / Persistence**: Entity Framework Core 10 (`Microsoft.EntityFrameworkCore.SqlServer`)
 - **Database Engine**: Microsoft SQL Server / LocalDB (`(localdb)\mssqllocaldb`)
 - **Identity & Security**: ASP.NET Core Identity & JWT Bearer (`Microsoft.AspNetCore.Authentication.JwtBearer`)
-- **API Documentation**: Built-in ASP.NET Core OpenAPI (`Microsoft.AspNetCore.OpenApi`)
+- **API Documentation & UI**: Swashbuckle ASP.NET Core (`Swashbuckle.AspNetCore`) with Swagger UI
 - **Testing**: xUnit, `Microsoft.AspNetCore.Mvc.Testing` (WebApplicationFactory), EF Core In-Memory / Test DB Context
 
 ---
@@ -76,7 +76,7 @@ fulfillment-inventory-platform/
 │   ├── Fulfillment.Domain/            # Domain Entities & Business Rules
 │   ├── Fulfillment.Application/       # DTOs, Service Contracts & Exceptions
 │   ├── Fulfillment.Infrastructure/    # DbContext, Repositories & Identity
-│   └── Fulfillment.Api/               # Controllers, Middleware & OpenAPI
+│   └── Fulfillment.Api/               # Controllers, Middleware & Swagger UI
 └── tests/
     ├── Fulfillment.UnitTests/         # Unit Tests for Application & Domain Logic
     └── Fulfillment.IntegrationTests/  # Integration Tests for Web API Endpoints
@@ -118,7 +118,7 @@ To launch the Web API server locally:
 dotnet run --project src/Fulfillment.Api
 ```
 
-The application will start and listen on the configured HTTP/HTTPS ports (e.g., `https://localhost:7001` or `http://localhost:5000`).
+The application will start and listen on the configured HTTP/HTTPS ports (e.g., `https://localhost:7001` or `http://localhost:5286`).
 
 ---
 
@@ -260,13 +260,28 @@ All 19 production Web API endpoints:
 
 ---
 
-## 15. OpenAPI Specification
+## 15. Swagger UI & OpenAPI Specification
 
-The API built-in OpenAPI specification endpoint is enabled in Development mode.
+The application provides interactive API documentation and testing via **Swagger UI** in Development mode.
 
-- **Specification Endpoint**: `/openapi/v1.json`
-- **Format**: OpenAPI v3 JSON Specification
-- **Usage**: Can be imported into Postman, Insomnia, or custom API clients to generate SDKs and view route contracts.
+### Distinguishing Swagger UI vs. OpenAPI Specification
+
+- **OpenAPI Specification**: Machine-readable JSON document describing all API routes, parameters, request/response DTO schemas, and security schemes. Available at:
+  ```
+  http://localhost:<port>/swagger/v1/swagger.json
+  ```
+- **Swagger UI**: Interactive browser UI for visual exploration and executing requests against live endpoints. Available at:
+  ```
+  http://localhost:<port>/swagger
+  ```
+
+### Authorizing Requests in Swagger UI
+
+1. Open `http://localhost:<port>/swagger` in your browser.
+2. Execute `POST /api/auth/login` to obtain your JWT bearer token.
+3. Click the **Authorize** button at the top right of the Swagger UI page.
+4. In the text field, type `Bearer <your-token>` (e.g., `Bearer eyJhbGciOi...`).
+5. Click **Authorize** and then **Close**. All protected endpoints can now be invoked directly within the UI.
 
 ---
 
@@ -298,10 +313,11 @@ Centralized exception handling is governed by [`GlobalExceptionHandler.cs`](file
 
 - **Development (`ASPNETCORE_ENVIRONMENT=Development`)**:
   - Detailed exception messages, inner exceptions, and stack traces included in `ProblemDetails.Detail`.
-  - Built-in OpenAPI specification mapped at `/openapi/v1.json`.
+  - Interactive **Swagger UI** (`/swagger`) and OpenAPI document (`/swagger/v1/swagger.json`) enabled.
   - Verbose logging (`Debug` / `Information`).
 - **Production (`ASPNETCORE_ENVIRONMENT=Production`)**:
   - `ProblemDetails.Detail` hides stack traces, internal SQL details, connection strings, and server paths for 500 errors.
+  - Swagger UI middleware disabled for security.
   - Strict security and User Secrets / Environment Variable key requirements.
 
 ---
