@@ -1,5 +1,6 @@
 using Fulfillment.Api.Middleware;
 using Fulfillment.Application.Categories;
+using Fulfillment.Application.Warehouses;
 using Fulfillment.Infrastructure;
 using Fulfillment.Infrastructure.Repositories;
 
@@ -14,6 +15,9 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 
 var app = builder.Build();
 
