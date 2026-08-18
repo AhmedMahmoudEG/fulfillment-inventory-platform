@@ -3,6 +3,8 @@ using Fulfillment.Application.Categories;
 using Fulfillment.Application.Warehouses;
 using Fulfillment.Infrastructure;
 using Fulfillment.Infrastructure.Repositories;
+using Fulfillment.Application.Products;
+using Fulfillment.Application.Inventory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +21,11 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 
-builder.Services.AddScoped<Fulfillment.Application.Products.IProductRepository, ProductRepository>();
-builder.Services.AddScoped<Fulfillment.Application.Products.IProductService, Fulfillment.Application.Products.ProductService>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
+
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 var app = builder.Build();
 
