@@ -1,5 +1,6 @@
 using Fulfillment.Application.Warehouses;
 using Fulfillment.Application.Warehouses.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fulfillment.Api.Controllers;
@@ -39,6 +40,20 @@ public class WarehousesController : ControllerBase
     public async Task<ActionResult<WarehouseResponse>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var response = await _warehouseService.GetByIdAsync(id, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet("{warehouseId:guid}/inventory")]
+    [Authorize(Policy = "InventoryView")]
+    [ProducesResponseType(typeof(IEnumerable<WarehouseInventoryItemResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<WarehouseInventoryItemResponse>>> GetWarehouseInventory(
+        Guid warehouseId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _warehouseService.GetWarehouseInventoryAsync(warehouseId, cancellationToken);
         return Ok(response);
     }
 

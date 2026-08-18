@@ -8,4 +8,5 @@ public interface IWarehouseService
     Task<List<WarehouseResponse>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<WarehouseResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<WarehouseInventoryItemResponse>> GetWarehouseInventoryAsync(Guid warehouseId, CancellationToken cancellationToken = default);
 }

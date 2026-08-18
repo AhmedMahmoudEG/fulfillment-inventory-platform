@@ -1,4 +1,5 @@
 using Fulfillment.Application.Inventory;
+using Fulfillment.Application.Warehouses.DTOs;
 using Fulfillment.Domain.Entities;
 using Fulfillment.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,19 @@ public class InventoryRepository : IInventoryRepository
             .Include(i => i.Product)
             .Include(i => i.Warehouse)
             .Where(i => i.Product != null && i.Warehouse != null)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<WarehouseInventoryItemResponse>> GetByWarehouseIdAsync(Guid warehouseId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Inventories
+            .AsNoTracking()
+            .Where(i => i.WarehouseId == warehouseId && i.Product != null && !i.Product.IsDeleted)
+            .Select(i => new WarehouseInventoryItemResponse(
+                i.ProductId,
+                i.Product!.Name,
+                i.Product!.SKU,
+                i.Quantity))
             .ToListAsync(cancellationToken);
     }
 

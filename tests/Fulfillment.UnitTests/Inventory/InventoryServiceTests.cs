@@ -29,6 +29,15 @@ public class InventoryServiceTests
             return Task.FromResult(Inventories.Where(i => i.Product != null && !i.Product.IsDeleted && i.Warehouse != null && !i.Warehouse.IsDeleted).ToList());
         }
 
+        public Task<List<Fulfillment.Application.Warehouses.DTOs.WarehouseInventoryItemResponse>> GetByWarehouseIdAsync(Guid warehouseId, CancellationToken cancellationToken = default)
+        {
+            var result = Inventories
+                .Where(i => i.WarehouseId == warehouseId && i.Product != null && !i.Product.IsDeleted)
+                .Select(i => new Fulfillment.Application.Warehouses.DTOs.WarehouseInventoryItemResponse(i.ProductId, i.Product!.Name, i.Product!.SKU, i.Quantity))
+                .ToList();
+            return Task.FromResult(result);
+        }
+
         public Task<bool> TryAdjustStockAtomicAsync(
             Guid inventoryId,
             int previousQuantity,

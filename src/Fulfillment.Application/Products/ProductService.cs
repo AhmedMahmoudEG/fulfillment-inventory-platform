@@ -79,7 +79,7 @@ public class ProductService : IProductService
             CategoryId = request.CategoryId
         };
 
-        var initialInventory = new Inventory(product.Id, request.WarehouseId, initialQuantity: 0);
+        var initialInventory = new Fulfillment.Domain.Entities.Inventory(product.Id, request.WarehouseId, initialQuantity: 0);
         product.Inventories.Add(initialInventory);
 
         await _productRepository.AddAsync(product, cancellationToken);

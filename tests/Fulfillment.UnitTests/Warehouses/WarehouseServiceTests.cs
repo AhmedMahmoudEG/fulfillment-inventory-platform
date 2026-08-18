@@ -1,4 +1,5 @@
 using Fulfillment.Application.Common.Exceptions;
+using Fulfillment.Application.Inventory;
 using Fulfillment.Application.Warehouses;
 using Fulfillment.Application.Warehouses.DTOs;
 using Fulfillment.Domain.Entities;
@@ -51,11 +52,47 @@ public class WarehouseServiceTests
         }
     }
 
+    private class FakeInventoryRepository : IInventoryRepository
+    {
+        public List<WarehouseInventoryItemResponse> ItemsToReturn { get; set; } = new();
+
+        public Task<InventoryEntity?> GetByProductIdAsync(Guid productId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<InventoryEntity?>(null);
+        }
+
+        public Task<InventoryEntity?> GetForAdjustmentAsync(Guid productId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<InventoryEntity?>(null);
+        }
+
+        public Task<List<InventoryEntity>> GetAllActiveAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new List<InventoryEntity>());
+        }
+
+        public Task<List<WarehouseInventoryItemResponse>> GetByWarehouseIdAsync(Guid warehouseId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ItemsToReturn);
+        }
+
+        public Task<bool> TryAdjustStockAtomicAsync(
+            Guid inventoryId,
+            int previousQuantity,
+            int newQuantity,
+            InventoryAdjustment adjustment,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(true);
+        }
+    }
+
     [Fact]
     public async Task CreateAsync_ValidWarehouse_Succeeds()
     {
         var repo = new FakeWarehouseRepository();
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
         var request = new CreateWarehouseRequest("Main Warehouse", "123 Main St", "Cairo");
 
         var result = await service.CreateAsync(request);
@@ -74,7 +111,8 @@ public class WarehouseServiceTests
     public async Task CreateAsync_InvalidName_ThrowsValidationException(string? invalidName)
     {
         var repo = new FakeWarehouseRepository();
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
         var request = new CreateWarehouseRequest(invalidName!, "123 Main St", "Cairo");
 
         await Assert.ThrowsAsync<ValidationException>(() => service.CreateAsync(request));
@@ -87,7 +125,8 @@ public class WarehouseServiceTests
     public async Task CreateAsync_InvalidAddress_ThrowsValidationException(string? invalidAddress)
     {
         var repo = new FakeWarehouseRepository();
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
         var request = new CreateWarehouseRequest("Main Warehouse", invalidAddress!, "Cairo");
 
         await Assert.ThrowsAsync<ValidationException>(() => service.CreateAsync(request));
@@ -97,7 +136,8 @@ public class WarehouseServiceTests
     public async Task CreateAsync_OptionalLocation_AcceptsNullOrWhitespaceAsNull()
     {
         var repo = new FakeWarehouseRepository();
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
         var request = new CreateWarehouseRequest("Main Warehouse", "123 Main St", "   ");
 
         var result = await service.CreateAsync(request);
@@ -109,7 +149,8 @@ public class WarehouseServiceTests
     public async Task CreateAsync_TrimsLeadingAndTrailingWhitespace()
     {
         var repo = new FakeWarehouseRepository();
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
         var request = new CreateWarehouseRequest("  Main Warehouse  ", "  123 Main St  ", "  Cairo  ");
 
         var result = await service.CreateAsync(request);
@@ -124,7 +165,8 @@ public class WarehouseServiceTests
     {
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(new Warehouse { Name = "Main Warehouse", Address = "Old St", IsDeleted = false });
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
 
         var request = new CreateWarehouseRequest("Main Warehouse", "New St", null);
 
@@ -136,7 +178,8 @@ public class WarehouseServiceTests
     {
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(new Warehouse { Name = "Main Warehouse", Address = "Old St", IsDeleted = true });
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
 
         var request = new CreateWarehouseRequest("Main Warehouse", "New St", null);
 
@@ -148,7 +191,8 @@ public class WarehouseServiceTests
     {
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(new Warehouse { Name = "Warehouse 1", Address = "123 St", IsDeleted = false });
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
 
         var request = new CreateWarehouseRequest("Warehouse 2", "456 St", null);
 
@@ -165,7 +209,8 @@ public class WarehouseServiceTests
 
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(warehouse);
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
 
         await Assert.ThrowsAsync<ConflictException>(() => service.DeleteAsync(warehouseId));
         Assert.False(warehouse.IsDeleted);
@@ -179,11 +224,47 @@ public class WarehouseServiceTests
 
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(warehouse);
-        var service = new WarehouseService(repo);
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
 
         await service.DeleteAsync(warehouseId);
 
         Assert.True(warehouse.IsDeleted);
         Assert.True(repo.SaveChangesCalled);
+    }
+
+    [Fact]
+    public async Task GetWarehouseInventoryAsync_ExistingWarehouse_ReturnsInventoryList()
+    {
+        var warehouseId = Guid.NewGuid();
+        var repo = new FakeWarehouseRepository();
+        repo.Warehouses.Add(new Warehouse { Id = warehouseId, Name = "Main Warehouse", Address = "123 St" });
+
+        var invRepo = new FakeInventoryRepository
+        {
+            ItemsToReturn = new List<WarehouseInventoryItemResponse>
+            {
+                new(Guid.NewGuid(), "Laptop", "LAP-1", 15),
+                new(Guid.NewGuid(), "Mouse", "MOU-1", 40)
+            }
+        };
+
+        var service = new WarehouseService(repo, invRepo);
+        var result = await service.GetWarehouseInventoryAsync(warehouseId);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Laptop", result[0].ProductName);
+        Assert.Equal("LAP-1", result[0].Sku);
+        Assert.Equal(15, result[0].Quantity);
+    }
+
+    [Fact]
+    public async Task GetWarehouseInventoryAsync_NonexistentWarehouse_ThrowsNotFoundException()
+    {
+        var repo = new FakeWarehouseRepository();
+        var invRepo = new FakeInventoryRepository();
+        var service = new WarehouseService(repo, invRepo);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => service.GetWarehouseInventoryAsync(Guid.NewGuid()));
     }
 }

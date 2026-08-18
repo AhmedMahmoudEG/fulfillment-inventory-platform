@@ -1,4 +1,5 @@
 using Fulfillment.Application.Common.Exceptions;
+using Fulfillment.Application.Inventory;
 using Fulfillment.Application.Warehouses.DTOs;
 using Fulfillment.Domain.Entities;
 
@@ -7,10 +8,14 @@ namespace Fulfillment.Application.Warehouses;
 public class WarehouseService : IWarehouseService
 {
     private readonly IWarehouseRepository _repository;
+    private readonly IInventoryRepository _inventoryRepository;
 
-    public WarehouseService(IWarehouseRepository repository)
+    public WarehouseService(
+        IWarehouseRepository repository,
+        IInventoryRepository inventoryRepository)
     {
         _repository = repository;
+        _inventoryRepository = inventoryRepository;
     }
 
     public async Task<WarehouseResponse> CreateAsync(CreateWarehouseRequest request, CancellationToken cancellationToken = default)
@@ -84,5 +89,16 @@ public class WarehouseService : IWarehouseService
 
         warehouse.IsDeleted = true;
         await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<WarehouseInventoryItemResponse>> GetWarehouseInventoryAsync(Guid warehouseId, CancellationToken cancellationToken = default)
+    {
+        var warehouse = await _repository.GetByIdAsync(warehouseId, cancellationToken);
+        if (warehouse == null)
+        {
+            throw new NotFoundException("Warehouse not found.");
+        }
+
+        return await _inventoryRepository.GetByWarehouseIdAsync(warehouseId, cancellationToken);
     }
 }
