@@ -27,6 +27,17 @@ public class InventoryController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("changes")]
+    [Authorize(Policy = "InventoryView")]
+    [ProducesResponseType(typeof(IEnumerable<InventoryAdjustmentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<InventoryAdjustmentResponse>>> GetRecentChanges(CancellationToken cancellationToken)
+    {
+        var response = await _inventoryService.GetRecentChangesAsync(cancellationToken);
+        return Ok(response);
+    }
+
     [HttpGet("{productId:guid}")]
     [Authorize(Policy = "InventoryView")]
     [ProducesResponseType(typeof(InventoryResponse), StatusCodes.Status200OK)]

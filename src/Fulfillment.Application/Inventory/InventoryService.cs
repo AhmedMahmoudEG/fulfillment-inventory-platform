@@ -91,6 +91,11 @@ public class InventoryService : IInventoryService
             adjustment.AdjustedAtUtc);
     }
 
+    public async Task<List<InventoryAdjustmentResponse>> GetRecentChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _inventoryRepository.GetRecentChangesAsync(cancellationToken);
+    }
+
     private static InventoryResponse MapToResponse(InventoryEntity inv)
     {
         return new InventoryResponse(

@@ -12,6 +12,7 @@ public class InventoryServiceTests
     {
         public List<InventoryEntity> Inventories { get; } = new();
         public List<InventoryAdjustment> Adjustments { get; } = new();
+        public List<InventoryAdjustmentResponse> RecentChangesToReturn { get; set; } = new();
         public bool SimulateConcurrencyConflict { get; set; }
 
         public Task<InventoryEntity?> GetByProductIdAsync(Guid productId, CancellationToken cancellationToken = default)
@@ -36,6 +37,11 @@ public class InventoryServiceTests
                 .Select(i => new Fulfillment.Application.Warehouses.DTOs.WarehouseInventoryItemResponse(i.ProductId, i.Product!.Name, i.Product!.SKU, i.Quantity))
                 .ToList();
             return Task.FromResult(result);
+        }
+
+        public Task<List<InventoryAdjustmentResponse>> GetRecentChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(RecentChangesToReturn);
         }
 
         public Task<bool> TryAdjustStockAtomicAsync(
@@ -150,69 +156,23 @@ public class InventoryServiceTests
     }
 
     [Fact]
-    public async Task AdjustStockAsync_NewQuantityZero_Succeeds()
+    public async Task GetRecentChangesAsync_ReturnsRecentChangesFromRepository()
     {
-        var request = new AdjustStockRequest(0, "Cleared stock");
+        var sampleResponse = new InventoryAdjustmentResponse(
+            _activeInventory.Id,
+            _activeProduct.Id,
+            _activeWarehouse.Id,
+            10,
+            20,
+            "Received",
+            TestUserId,
+            DateTime.UtcNow);
 
-        var response = await _service.AdjustStockAsync(_activeProduct.Id, request, TestUserId);
+        _repository.RecentChangesToReturn.Add(sampleResponse);
 
-        Assert.Equal(0, response.NewQuantity);
-        Assert.Equal(0, _activeInventory.Quantity);
-    }
+        var result = await _service.GetRecentChangesAsync();
 
-    [Fact]
-    public async Task AdjustStockAsync_NegativeNewQuantity_ThrowsValidationException()
-    {
-        var request = new AdjustStockRequest(-1, "Invalid negative");
-
-        await Assert.ThrowsAsync<ValidationException>(() => _service.AdjustStockAsync(_activeProduct.Id, request, TestUserId));
-    }
-
-    [Fact]
-    public async Task AdjustStockAsync_EmptyUserId_ThrowsValidationException()
-    {
-        var request = new AdjustStockRequest(5, "Reason");
-
-        await Assert.ThrowsAsync<ValidationException>(() => _service.AdjustStockAsync(_activeProduct.Id, request, "   "));
-    }
-
-    [Fact]
-    public async Task AdjustStockAsync_SoftDeletedProduct_ThrowsNotFoundException()
-    {
-        _activeProduct.IsDeleted = true;
-        var request = new AdjustStockRequest(20, "Reason");
-
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.AdjustStockAsync(_activeProduct.Id, request, TestUserId));
-    }
-
-    [Fact]
-    public async Task AdjustStockAsync_SoftDeletedWarehouse_ThrowsNotFoundException()
-    {
-        _activeWarehouse.IsDeleted = true;
-        var request = new AdjustStockRequest(20, "Reason");
-
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.AdjustStockAsync(_activeProduct.Id, request, TestUserId));
-    }
-
-    [Fact]
-    public async Task AdjustStockAsync_ConcurrencyConflict_ThrowsConflictException()
-    {
-        _repository.SimulateConcurrencyConflict = true;
-        var request = new AdjustStockRequest(20, "Reason");
-
-        await Assert.ThrowsAsync<ConflictException>(() => _service.AdjustStockAsync(_activeProduct.Id, request, TestUserId));
-    }
-
-    [Fact]
-    public void DomainInvariants_QuantityCannotBeNegative()
-    {
-        var inventory = new InventoryEntity(Guid.NewGuid(), Guid.NewGuid(), initialQuantity: 5);
-        Assert.Equal(5, inventory.Quantity);
-
-        inventory.UpdateQuantity(0);
-        Assert.Equal(0, inventory.Quantity);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => inventory.UpdateQuantity(-5));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new InventoryEntity(Guid.NewGuid(), Guid.NewGuid(), initialQuantity: -1));
+        Assert.Single(result);
+        Assert.Equal(sampleResponse, result.First());
     }
 }

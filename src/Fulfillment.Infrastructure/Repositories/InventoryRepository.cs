@@ -1,4 +1,5 @@
 using Fulfillment.Application.Inventory;
+using Fulfillment.Application.Inventory.DTOs;
 using Fulfillment.Application.Warehouses.DTOs;
 using Fulfillment.Domain.Entities;
 using Fulfillment.Infrastructure.Persistence;
@@ -53,6 +54,25 @@ public class InventoryRepository : IInventoryRepository
                 i.Product!.Name,
                 i.Product!.SKU,
                 i.Quantity))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<InventoryAdjustmentResponse>> GetRecentChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.InventoryAdjustments
+            .AsNoTracking()
+            .OrderByDescending(a => a.AdjustedAtUtc)
+            .ThenByDescending(a => a.Id)
+            .Take(20)
+            .Select(a => new InventoryAdjustmentResponse(
+                a.InventoryId,
+                a.Inventory!.ProductId,
+                a.Inventory!.WarehouseId,
+                a.PreviousQuantity,
+                a.NewQuantity,
+                a.Reason,
+                a.AdjustedByUserId,
+                a.AdjustedAtUtc))
             .ToListAsync(cancellationToken);
     }
 

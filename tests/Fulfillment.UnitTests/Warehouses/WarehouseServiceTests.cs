@@ -76,6 +76,11 @@ public class WarehouseServiceTests
             return Task.FromResult(ItemsToReturn);
         }
 
+        public Task<List<Fulfillment.Application.Inventory.DTOs.InventoryAdjustmentResponse>> GetRecentChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new List<Fulfillment.Application.Inventory.DTOs.InventoryAdjustmentResponse>());
+        }
+
         public Task<bool> TryAdjustStockAtomicAsync(
             Guid inventoryId,
             int previousQuantity,
