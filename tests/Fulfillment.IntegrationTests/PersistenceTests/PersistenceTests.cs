@@ -2,6 +2,7 @@ using Fulfillment.Domain.Entities;
 using Fulfillment.Infrastructure.Identity;
 using Fulfillment.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using InventoryEntity = Fulfillment.Domain.Entities.Inventory;
 
 namespace Fulfillment.IntegrationTests.PersistenceTests;
 
@@ -93,11 +94,11 @@ public class PersistenceTests : IDisposable
         context.Warehouses.Add(warehouse);
         await context.SaveChangesAsync();
 
-        var inv1 = new Inventory(product.Id, warehouse.Id, 5);
+        var inv1 = new InventoryEntity(product.Id, warehouse.Id, 5);
         context.Inventories.Add(inv1);
         await context.SaveChangesAsync();
 
-        var invDuplicate = new Inventory(product.Id, warehouse.Id, 10);
+        var invDuplicate = new InventoryEntity(product.Id, warehouse.Id, 10);
         context.Inventories.Add(invDuplicate);
 
         await Assert.ThrowsAnyAsync<DbUpdateException>(() => context.SaveChangesAsync());
@@ -165,7 +166,7 @@ public class PersistenceTests : IDisposable
         context.Warehouses.Add(warehouse);
         await context.SaveChangesAsync();
 
-        var inventory = new Inventory(product.Id, warehouse.Id, 20);
+        var inventory = new InventoryEntity(product.Id, warehouse.Id, 20);
         context.Inventories.Add(inventory);
         await context.SaveChangesAsync();
 
@@ -202,7 +203,7 @@ public class PersistenceTests : IDisposable
             seedContext.Warehouses.Add(warehouse);
             await seedContext.SaveChangesAsync();
 
-            var inventory = new Inventory(product.Id, warehouse.Id, 10);
+            var inventory = new InventoryEntity(product.Id, warehouse.Id, 10);
             seedContext.Inventories.Add(inventory);
             await seedContext.SaveChangesAsync();
 

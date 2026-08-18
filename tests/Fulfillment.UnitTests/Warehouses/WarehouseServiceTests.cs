@@ -2,6 +2,7 @@ using Fulfillment.Application.Common.Exceptions;
 using Fulfillment.Application.Warehouses;
 using Fulfillment.Application.Warehouses.DTOs;
 using Fulfillment.Domain.Entities;
+using InventoryEntity = Fulfillment.Domain.Entities.Inventory;
 
 namespace Fulfillment.UnitTests.Warehouses;
 
@@ -160,7 +161,7 @@ public class WarehouseServiceTests
         var warehouseId = Guid.NewGuid();
         var warehouse = new Warehouse { Id = warehouseId, Name = "Main Warehouse", Address = "123 St" };
         var product = new Product { Name = "Laptop", SKU = "LAP-1", IsDeleted = false };
-        warehouse.Inventories.Add(new Inventory(product.Id, warehouseId, 10) { Product = product });
+        warehouse.Inventories.Add(new InventoryEntity(product.Id, warehouseId, 10) { Product = product });
 
         var repo = new FakeWarehouseRepository();
         repo.Warehouses.Add(warehouse);

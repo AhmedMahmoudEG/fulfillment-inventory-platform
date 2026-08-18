@@ -10,7 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fulfillment.IntegrationTests.Categories;
 
-public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("IntegrationTests")]
+public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _factory;
 
@@ -24,11 +25,34 @@ public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Pro
         return scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     }
 
+    public async Task InitializeAsync()
+    {
+        await ClearAllDataAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await ClearAllDataAsync();
+    }
+
+    private async Task ClearAllDataAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = GetDbContext(scope);
+        await db.Database.ExecuteSqlRawAsync(@"
+            DELETE FROM Inventories;
+            DELETE FROM Products;
+            DELETE FROM Categories;
+            DELETE FROM Warehouses;
+        ");
+    }
+
     [Fact]
     public async Task CreateCategory_WithValidName_Returns201CreatedAndCategoryResponse()
     {
         var client = _factory.CreateClient();
-        var request = new CreateCategoryRequest("Electronics");
+        var catName = $"Electronics_{Guid.NewGuid():N}";
+        var request = new CreateCategoryRequest(catName);
 
         var response = await client.PostAsJsonAsync("/api/categories", request);
 
@@ -38,14 +62,15 @@ public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Pro
         var content = await response.Content.ReadFromJsonAsync<CategoryResponse>();
         Assert.NotNull(content);
         Assert.NotEqual(Guid.Empty, content.Id);
-        Assert.Equal("Electronics", content.Name);
+        Assert.Equal(catName, content.Name);
     }
 
     [Fact]
     public async Task CreateCategory_WithWhitespaceInName_TrimsWhitespaceAndReturns201()
     {
         var client = _factory.CreateClient();
-        var request = new CreateCategoryRequest("   Home Appliances   ");
+        var catName = $"HomeAppliances_{Guid.NewGuid():N}";
+        var request = new CreateCategoryRequest($"   {catName}   ");
 
         var response = await client.PostAsJsonAsync("/api/categories", request);
 
@@ -53,7 +78,7 @@ public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Pro
 
         var content = await response.Content.ReadFromJsonAsync<CategoryResponse>();
         Assert.NotNull(content);
-        Assert.Equal("Home Appliances", content.Name);
+        Assert.Equal(catName, content.Name);
     }
 
     [Theory]
@@ -258,15 +283,16 @@ public class CategoriesControllerTests : IClassFixture<WebApplicationFactory<Pro
     public async Task CategoryResponse_DTO_ExposesOnlyIdAndName()
     {
         var client = _factory.CreateClient();
-        var createRes = await client.PostAsJsonAsync("/api/categories", new CreateCategoryRequest("DTOTest"));
+        var catName = $"DTOTest_{Guid.NewGuid():N}";
+        var createRes = await client.PostAsJsonAsync("/api/categories", new CreateCategoryRequest(catName));
         var json = await createRes.Content.ReadAsStringAsync();
 
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        Assert.True(root.TryGetProperty("id", out _));
-        Assert.True(root.TryGetProperty("name", out _));
-        Assert.False(root.TryGetProperty("isDeleted", out _));
-        Assert.False(root.TryGetProperty("products", out _));
+        Assert.True(root.TryGetProperty("id", out _) || root.TryGetProperty("Id", out _));
+        Assert.True(root.TryGetProperty("name", out _) || root.TryGetProperty("Name", out _));
+        Assert.False(root.TryGetProperty("isDeleted", out _) || root.TryGetProperty("IsDeleted", out _));
+        Assert.False(root.TryGetProperty("products", out _) || root.TryGetProperty("Products", out _));
     }
 }

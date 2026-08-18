@@ -8,10 +8,12 @@ using Fulfillment.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using InventoryEntity = Fulfillment.Domain.Entities.Inventory;
 
 namespace Fulfillment.IntegrationTests.Warehouses;
 
-public class WarehousesControllerTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("IntegrationTests")]
+public class WarehousesControllerTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _factory;
 
@@ -23,6 +25,28 @@ public class WarehousesControllerTests : IClassFixture<WebApplicationFactory<Pro
     private ApplicationDbContext GetDbContext(IServiceScope scope)
     {
         return scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    }
+
+    public async Task InitializeAsync()
+    {
+        await ClearActiveWarehousesAndProductsAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await ClearActiveWarehousesAndProductsAsync();
+    }
+
+    private async Task ClearActiveWarehousesAndProductsAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = GetDbContext(scope);
+        await db.Database.ExecuteSqlRawAsync(@"
+            DELETE FROM Inventories;
+            DELETE FROM Products;
+            DELETE FROM Categories;
+            DELETE FROM Warehouses;
+        ");
     }
 
     [Fact]
@@ -247,7 +271,7 @@ public class WarehousesControllerTests : IClassFixture<WebApplicationFactory<Pro
             dbContext.Products.Add(product);
             await dbContext.SaveChangesAsync();
 
-            var inventory = new Inventory(product.Id, warehouse!.Id, 5);
+            var inventory = new InventoryEntity(product.Id, warehouse!.Id, 5);
             dbContext.Inventories.Add(inventory);
             await dbContext.SaveChangesAsync();
         }

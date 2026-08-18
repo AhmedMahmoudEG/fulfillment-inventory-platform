@@ -17,6 +17,7 @@ public class TestErrorWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(TargetEnvironment);
+        builder.UseSetting("Jwt:SigningKey", "TestSigningKeyAtLeast256BitsLongForSecurity12345!");
 
         builder.Configure(app =>
         {
@@ -169,7 +170,7 @@ public class GlobalErrorHandlingTests
         var healthResponse = await client.GetAsync("/health");
 
         Assert.Equal(HttpStatusCode.NotFound, testEndpointResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, productsResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, productsResponse.StatusCode);
         Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
     }
 }

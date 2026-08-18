@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Fulfillment.Application.Inventory;
 using Fulfillment.Application.Inventory.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fulfillment.Api.Controllers;
@@ -17,7 +18,9 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "InventoryView")]
     [ProducesResponseType(typeof(IEnumerable<InventoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<InventoryResponse>>> GetAll(CancellationToken cancellationToken)
     {
         var response = await _inventoryService.GetAllAsync(cancellationToken);
@@ -25,7 +28,9 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet("{productId:guid}")]
+    [Authorize(Policy = "InventoryView")]
     [ProducesResponseType(typeof(InventoryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InventoryResponse>> GetByProductId(Guid productId, CancellationToken cancellationToken)
     {
@@ -34,6 +39,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("{productId:guid}/adjust")]
+    [Authorize(Policy = "InventoryAdjust")]
     [ProducesResponseType(typeof(InventoryAdjustmentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

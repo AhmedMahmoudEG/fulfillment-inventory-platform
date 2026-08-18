@@ -1,4 +1,5 @@
 using Fulfillment.Domain.Entities;
+using InventoryEntity = Fulfillment.Domain.Entities.Inventory;
 
 namespace Fulfillment.UnitTests.Domain;
 
@@ -16,7 +17,7 @@ public class WarehouseTests
     {
         var warehouse = new Warehouse { Name = "Main Hub", Address = "123 Street" };
         var product = new Product { Name = "Phone", SKU = "PHN-01", IsDeleted = false };
-        var inventory = new Inventory(product.Id, warehouse.Id, 10) { Product = product };
+        var inventory = new InventoryEntity(product.Id, warehouse.Id, 10) { Product = product };
         
         warehouse.Inventories.Add(inventory);
 
@@ -28,7 +29,7 @@ public class WarehouseTests
     {
         var warehouse = new Warehouse { Name = "Main Hub", Address = "123 Street" };
         var softDeletedProduct = new Product { Name = "Old Phone", SKU = "PHN-OLD", IsDeleted = true };
-        var inventory = new Inventory(softDeletedProduct.Id, warehouse.Id, 10) { Product = softDeletedProduct };
+        var inventory = new InventoryEntity(softDeletedProduct.Id, warehouse.Id, 10) { Product = softDeletedProduct };
 
         warehouse.Inventories.Add(inventory);
 

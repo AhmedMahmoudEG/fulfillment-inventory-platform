@@ -1,10 +1,11 @@
 using Fulfillment.Api.Middleware;
 using Fulfillment.Application.Categories;
+using Fulfillment.Application.Inventory;
+using Fulfillment.Application.Products;
 using Fulfillment.Application.Warehouses;
 using Fulfillment.Infrastructure;
+using Fulfillment.Infrastructure.Identity;
 using Fulfillment.Infrastructure.Repositories;
-using Fulfillment.Application.Products;
-using Fulfillment.Application.Inventory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,9 +32,15 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", environment = app.Environment.EnvironmentName }));
+
+// Run idempotent role seeding & admin bootstrap
+await IdentityInitializer.InitializeAsync(app.Services);
 
 app.Run();
 
